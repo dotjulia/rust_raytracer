@@ -6,71 +6,85 @@ use cgmath::{Vector3, InnerSpace};
 use crate::hitable::{Hitable, HitRecord};
 extern crate rand;
 use std::thread;
+use threadpool::ThreadPool;
 
 use self::rand::Rng;
 use std::sync::Arc;
+use std::sync::mpsc::Sender;
+use core::fmt;
+use std::fmt::Formatter;
 
-pub struct RenderEngine{
+pub struct RenderEngineMultithread{
 }
 
-impl RenderEngine {
+struct RenderThreadResult {
+    row: u32,
+    pixel: Vec<Color>,
+}
+
+impl fmt::Display for RenderThreadResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.row, self.pixel.len())
+    }
+}
+
+impl RenderEngineMultithread {
     pub fn render(scene: Box<Scene>, image: &mut Box<ImageOutput>, max_depth: i32) {
         let ns = scene.camera.antialiasing_iterations;
-        let mut curr_line = 0;
         //let mut join_handles = Vec::with_capacity(scene.height as usize);
-        println!();
-        for j in (0..scene.height).rev() {
+        let n_workers = 32;
+        let pool = ThreadPool::new(n_workers);
+        let (tx, rx) = std::sync::mpsc::channel::<RenderThreadResult>();
+        for j in 0..scene.height {
             let width = scene.width;
             let height = scene.height;
             let world = scene.world.duplicate();
+            let camera = scene.camera.duplicate();
+            let tx = tx.clone();
+            pool.execute(move || {
                 let mut rng = rand::thread_rng();
+                let mut row: Vec<Color> = Vec::with_capacity(width as usize);
                 for i in 0..width {
                     let mut color = Color {r: 0.0, g: 0.0, b: 0.0};
                     for s in 0..ns {
                         let u = (i as f64 + ( if ns>1 { rng.gen::<f64>() } else { 0.0 })) as f64 / width as f64;
                         let v = (j as f64 + ( if ns>1 { rng.gen::<f64>() } else { 0.0 })) as f64 / height as f64;
-                        let r = scene.camera.get_ray(u, v);
-                        color = color + RenderEngine::color_at(r, &world, 0, max_depth);
+                        let r = camera.get_ray(u, v);
+                        color = color + RenderEngineMultithread::color_at(r, &world, 0, max_depth);
                     }
                     color /= ns as f64;
-                    image.set_pixel(i as usize, j as usize, color);
+                    row.push(color);
+                    //image.set_pixel(i as usize, j as usize, color);
                 }
-            curr_line += 1;
-            println!("{}%", curr_line*100/scene.height);
+                tx.send(RenderThreadResult {
+                    row: j,
+                    pixel: row,
+                });
+            });
+        }
+        let mut finished_rows = 0;
+        for t in rx.iter() {
+            for (i, p) in t.pixel.iter().enumerate() {
+                image.set_pixel(i, t.row as usize, *p);
+            }
+            finished_rows += 1;
+            println!("{}/{}", finished_rows, scene.height);
+            if finished_rows == scene.height {
+                return;
+            }
         }
     }
 
-    // fn hit_sphere(center: Vector3<f64>, radius: f64, r: &Ray) -> f64 {
-    //     let oc = r.origin - center;
-    //     let a = r.direction.dot(r.direction);
-    //     let b = oc.dot(r.direction) * 2.0;
-    //     let c = oc.dot(oc) - radius * radius;
-    //     let discriminant = b * b - 4.0 * a * c;
-    //     if discriminant < 0.0 {
-    //         return -1.0;
-    //     } else {
-    //         return (-b - discriminant.sqrt()) / (2.0 * a);
-    //     }
-    // }
-
     fn color_at(ray: Ray, world: &Box<dyn Hitable>, depth: i32, max_depth: i32) -> Color {
-        /*let t = RenderEngine::hit_sphere(Vector3::new(0.0, 0.0, -1.0), 0.5, &ray);
-        if t > 0.0 {
-            let n = (ray.point_at_parameter(t) - Vector3::new(0.0,0.0,-1.0)).normalize();
-            let ret_val = Vector3::new(n.x + 1.0, n.y + 1.0, n.z + 1.0);
-            return Color{r: ret_val.x, g: ret_val.y, b: ret_val.z};
-        }
-        let unit_direction = ray.direction.normalize();
-        let t = 0.5 * (unit_direction.y + 1.0);
-        let ret_vec = (Vector3::new(1.0, 1.0, 1.0)) * (1.0 - t) + (Vector3::new(0.5, 0.7, 1.0)) * t;
-        return Color{r: ret_vec.x, g: ret_vec.y, b: ret_vec.z};*/
         let mut rec = HitRecord::new_empty();
         if world.hit(&ray, 0.001, 100000000.0, & mut rec) {
             let mut scattered = Ray::new_empty();
             let mut attenuation = Vector3::new(0.0, 0.0, 0.0);
+            let mut emissive = false;
+            let mut emission = Vector3::new(0.0, 0.0, 0.0);
             if depth < max_depth && rec.material.scatter(&ray, &rec, &mut attenuation, &mut scattered) {
                 //println!("Scattered: {}, Attenuation: Vector3 [{}, {}, {}]", scattered, attenuation);
-                return RenderEngine::color_at(scattered, world, depth+1, max_depth) * attenuation;
+                return RenderEngineMultithread::color_at(scattered, world, depth+1, max_depth) * attenuation;
             } else {
                 return Color {
                     r: 0.0,
@@ -78,12 +92,15 @@ impl RenderEngine {
                     b: 0.0,
                 }
             }
-            //return RenderEngine::color_at(Ray {origin: rec.position, direction: target - rec.position}, world) * 0.5;
-            //return Color::from_vector3(Vector3::new(rec.normal.x + 1.0, rec.normal.y + 1.0, rec.normal.z + 1.0) * 0.5);
-        } else {
+       } else {
             let unit_direction = ray.direction.normalize();
             let t = (unit_direction.y + 1.0) * 0.5;
             return Color::from_vector3(Vector3::new(1.0, 1.0, 1.0) * (1.0 - t) + Vector3::new(0.5, 0.7, 1.0) * t);
+            /*return Color {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+            }*/
         }
     }
 
