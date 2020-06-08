@@ -13,10 +13,11 @@ pub struct Lambertian {
 impl Material for Lambertian {
     fn scatter (&self, r_in: &Ray, rec: &HitRecord, attenuation: &mut Vector3<f64>, scattered: &mut Ray) -> bool {
         let target = rec.position + rec.normal + RenderEngine::random_in_unit_sphere();
-        *scattered = Ray {
+        /* *scattered = Ray {
             origin: rec.position,
             direction: target - rec.position,
-        };
+        };*/
+        *scattered = Ray::newTime(rec.position, target - rec.position, r_in.time);
         *attenuation = self.albedo;
         //*emissive = false;
         /*if self.emission > 0.1 {

@@ -64,23 +64,26 @@ impl Material for Dielectric {
             // };
         } else {
             reflect_prob = 1.0;
-            *scattered = Ray {
+            /* *scattered = Ray {
                 origin: rec.position,
                 direction: reflected,
-            };
+            }; */
+            *scattered = Ray::newTime(rec.position, reflected,r_in.time);
             //return false;
         }
         let mut rng = rand::thread_rng();
         if rng.gen::<f64>() < reflect_prob {
-            *scattered = Ray {
+            /* *scattered = Ray {
                 origin: rec.position,
                 direction: reflected,
-            };
+            };*/
+            *scattered = Ray::newTime(rec.position, reflected, r_in.time);
         } else {
-            *scattered = Ray {
+            /* *scattered = Ray {
                 origin: rec.position,
                 direction: refracted,
-            };
+            };*/
+            *scattered = Ray::newTime(rec.position, refracted, r_in.time);
         }
         return true;
     }

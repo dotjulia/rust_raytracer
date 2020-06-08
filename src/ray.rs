@@ -6,6 +6,7 @@ use std::fmt;
 pub struct Ray {
     pub origin: Vector3<f64>,
     pub direction: Vector3<f64>,
+    pub time: f64,
 }
 
 impl fmt::Display for Ray {
@@ -19,10 +20,27 @@ impl Ray {
         return self.origin + self.direction * t;
     }
 
+    pub fn newTime(origin: Vector3<f64>, direction: Vector3<f64>, time: f64) -> Ray {
+        return Ray {
+            origin,
+            direction,
+            time,
+        }
+    }
+
+    pub fn new(origin: Vector3<f64>, direction: Vector3<f64>) -> Ray {
+        return Ray {
+            origin,
+            direction,
+            time: 0.0,
+        }
+    }
+
     pub fn new_empty() -> Ray {
         return Ray {
             origin: Vector3::new(0.0, 0.0, 0.0),
             direction: Vector3::new(0.0, 0.0, 0.0),
+            time: 0.0,
         }
     }
 }
