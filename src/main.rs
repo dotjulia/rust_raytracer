@@ -100,13 +100,14 @@ fn main() {
                     width as f64 / height as f64,
                     aperture,
                     dist_to_focus,
-                    100,
+                    40,
                     0.0,
                     1.0,
                 ),
             }),
         &mut img,
-        50
+        50,
+        8,
     );
     println!("\nFinished render in: {}", start.elapsed().as_millis());
     //img.remap_pixel_range(1.0);

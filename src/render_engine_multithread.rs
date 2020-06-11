@@ -13,6 +13,7 @@ use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use core::fmt;
 use std::fmt::Formatter;
+use colored::Colorize;
 
 pub struct RenderEngineMultithread{
 }
@@ -28,11 +29,21 @@ impl fmt::Display for RenderThreadResult {
     }
 }
 
+#[cfg(debug_assertions)]
+fn check_debug() {
+    println!("{}", "Running in debug mode. Rendering will be significantly slower.".red());
+}
+
+#[cfg(not(debug_assertions))]
+fn check_debug() {
+    // Debugging disabled
+}
+
 impl RenderEngineMultithread {
-    pub fn render(scene: Box<Scene>, image: &mut Box<ImageOutput>, max_depth: i32) {
+    pub fn render(scene: Box<Scene>, image: &mut Box<ImageOutput>, max_depth: i32, n_workers: usize) {
+        check_debug(); // Checking if running in debug mode
         let ns = scene.camera.antialiasing_iterations;
         //let mut join_handles = Vec::with_capacity(scene.height as usize);
-        let n_workers = 32;
         let pool = ThreadPool::new(n_workers);
         let (tx, rx) = std::sync::mpsc::channel::<RenderThreadResult>();
         for j in 0..scene.height {
