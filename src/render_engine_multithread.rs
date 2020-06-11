@@ -14,6 +14,7 @@ use std::sync::mpsc::Sender;
 use core::fmt;
 use std::fmt::Formatter;
 use colored::Colorize;
+use crate::trait_output::Output;
 
 pub struct RenderEngineMultithread{
 }
@@ -40,7 +41,7 @@ fn check_debug() {
 }
 
 impl RenderEngineMultithread {
-    pub fn render(scene: Box<Scene>, image: &mut Box<ImageOutput>, max_depth: i32, n_workers: usize) {
+    pub fn render(scene: Box<Scene>, image: &mut Box<dyn Output>, max_depth: i32, n_workers: usize) {
         check_debug(); // Checking if running in debug mode
         let ns = scene.camera.antialiasing_iterations;
         //let mut join_handles = Vec::with_capacity(scene.height as usize);

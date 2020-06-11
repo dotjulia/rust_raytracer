@@ -4,7 +4,6 @@ extern crate image;
 mod image_output;
 mod color;
 mod scene;
-mod render_engine;
 mod ray;
 mod hitable;
 mod hitable_collection;
@@ -13,6 +12,7 @@ mod camera;
 mod material;
 mod lambertian;
 mod metal;
+mod trait_output;
 mod dielectric;
 mod render_engine_multithread;
 mod moving_sphere;
@@ -21,7 +21,6 @@ mod moving_sphere;
 //use image::{ImageBuffer, Rgb};
 use crate::image_output::ImageOutput;
 use crate::scene::Scene;
-use crate::render_engine::RenderEngine;
 use crate::hitable_collection::HitableCollection;
 use crate::cgmath::Vector3;
 use crate::moving_sphere::MovingSphere;
@@ -36,6 +35,7 @@ use crate::cgmath::InnerSpace;
 use crate::render_engine_multithread::RenderEngineMultithread;
 use crate::hitable::Hitable;
 use rand::Rng;
+use crate::trait_output::Output;
 
 fn random_scene(scene: &mut Vec<Box<dyn Hitable>>) {
     let n = 500;
@@ -64,7 +64,7 @@ fn random_scene(scene: &mut Vec<Box<dyn Hitable>>) {
 fn main() {
     let width = 400;
     let height = 200;
-    let mut img = Box::from(ImageOutput::new(width, height));
+    let mut img: Box<dyn Output> = Box::from(ImageOutput::new(width, height));
     // let world = Box::from(HitableCollection{
     //     list:vec![
     //         Box::from(Sphere::new(Vector3::new(0.0,0.0,-1.0), 0.5, Box::from(Lambertian::new(Vector3::new(0.2, 0.8, 0.1), 0.0)))),

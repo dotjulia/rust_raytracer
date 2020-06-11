@@ -1,8 +1,8 @@
 use cgmath::Vector3;
 use crate::ray::Ray;
 use crate::hitable::HitRecord;
-use crate::render_engine::RenderEngine;
 use crate::material::Material;
+use crate::render_engine_multithread::RenderEngineMultithread;
 
 #[derive(Copy, Clone)]
 pub struct Lambertian {
@@ -12,7 +12,7 @@ pub struct Lambertian {
 
 impl Material for Lambertian {
     fn scatter (&self, r_in: &Ray, rec: &HitRecord, attenuation: &mut Vector3<f64>, scattered: &mut Ray) -> bool {
-        let target = rec.position + rec.normal + RenderEngine::random_in_unit_sphere();
+        let target = rec.position + rec.normal + RenderEngineMultithread::random_in_unit_sphere();
         /* *scattered = Ray {
             origin: rec.position,
             direction: target - rec.position,
