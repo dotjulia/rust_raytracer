@@ -62,7 +62,7 @@ impl RenderEngineMultithread {
             rows.shuffle(&mut thread_rng());
         }
 
-        for j in 0..scene.height {
+        for j in rows {
             let width = scene.width;
             let height = scene.height;
             let world = scene.world.duplicate();
