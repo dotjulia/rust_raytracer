@@ -8,13 +8,14 @@ extern crate rand;
 use std::thread;
 use threadpool::ThreadPool;
 
-use self::rand::Rng;
+use self::rand::{Rng, thread_rng};
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use core::fmt;
 use std::fmt::Formatter;
 use colored::Colorize;
 use crate::trait_output::Output;
+use self::rand::seq::SliceRandom;
 
 pub struct RenderEngineMultithread{
 }
@@ -40,13 +41,27 @@ fn check_debug() {
     // Debugging disabled
 }
 
+fn lines_as_arr (lines: u32) -> Vec<u32> {
+    let mut arr = Vec::with_capacity(lines as usize);
+    for i in 0..lines {
+        arr.push(i);
+    }
+    return arr;
+}
+
 impl RenderEngineMultithread {
-    pub fn render(scene: Box<Scene>, image: &mut Box<dyn Output>, max_depth: i32, n_workers: usize) {
+    pub fn render(scene: Box<Scene>, image: &mut Box<dyn Output>, max_depth: i32, n_workers: usize, randomize_line_order: bool) {
         check_debug(); // Checking if running in debug mode
         let ns = scene.camera.antialiasing_iterations;
         //let mut join_handles = Vec::with_capacity(scene.height as usize);
         let pool = ThreadPool::new(n_workers);
         let (tx, rx) = std::sync::mpsc::channel::<RenderThreadResult>();
+
+        let mut rows = lines_as_arr(scene.height);
+        if randomize_line_order {
+            rows.shuffle(&mut thread_rng());
+        }
+
         for j in 0..scene.height {
             let width = scene.width;
             let height = scene.height;
@@ -54,9 +69,9 @@ impl RenderEngineMultithread {
             let camera = scene.camera.duplicate();
             let tx = tx.clone();
             pool.execute(move || {
-                let mut rng = rand::thread_rng();
                 let mut row: Vec<Color> = Vec::with_capacity(width as usize);
                 for i in 0..width {
+                    let mut rng = rand::thread_rng();
                     let mut color = Color {r: 0.0, g: 0.0, b: 0.0};
                     for s in 0..ns {
                         let u = (i as f64 + ( if ns>1 { rng.gen::<f64>() } else { 0.0 })) as f64 / width as f64;
@@ -76,8 +91,12 @@ impl RenderEngineMultithread {
         }
         let mut finished_rows = 0;
         for t in rx.iter() {
-            for (i, p) in t.pixel.iter().enumerate() {
-                image.set_pixel(i, t.row as usize, *p);
+            if image.wants_row() {
+                image.set_row(t.row as usize, t.pixel);
+            } else {
+                for (i, p) in t.pixel.iter().enumerate() {
+                    image.set_pixel(i, t.row as usize, *p);
+                }
             }
             finished_rows += 1;
             println!("{}/{}", finished_rows, scene.height);

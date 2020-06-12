@@ -67,4 +67,16 @@ impl Color {
             b: vec.z,
         };
     }
+
+    pub fn RGB(r: u8, g: u8, b: u8) -> Color {
+        return Color {
+            r: r as f64 / 255.0,
+            g: g as f64 / 255.0,
+            b: b as f64 / 255.0,
+        }
+    }
+
+    pub fn to_sdl_color(&self) -> sdl2::pixels::Color {
+        return sdl2::pixels::Color::RGB((self.r * 255.0) as u8, (self.g * 255.0) as u8, (self.b * 255.0) as u8);
+    }
 }

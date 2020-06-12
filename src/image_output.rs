@@ -3,6 +3,7 @@ extern crate image;
 use crate::color::Color;
 use image::{Rgb, ImageBuffer};
 use crate::trait_output::Output;
+use crate::render_information::RenderInformation;
 
 //use std::cmp;
 
@@ -13,7 +14,7 @@ pub struct ImageOutput {
 }
 
 impl Output for ImageOutput {
-    fn save (&self, path: &str) {
+    fn save (&mut self, path: &str, info: RenderInformation) {
         let mut imgbuf = ImageBuffer::new(self.width, self.height);
         for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
             //cmp::min(cmp::max(self.pixels.get(y).get(x)*255, 0).r, 255)
@@ -23,6 +24,13 @@ impl Output for ImageOutput {
     }
     fn set_pixel(&mut self, x: usize, y: usize, c: Color) {
         self.pixels[y][x] = c;
+    }
+    fn set_row(&mut self, y: usize, c: Vec<Color>) {
+        //
+    }
+
+    fn wants_row(&self) -> bool {
+        return false;
     }
 }
 
