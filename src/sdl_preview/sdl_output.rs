@@ -106,20 +106,16 @@ impl SDLOutput {
             .position_centered()
             .build()
             .map_err(|e| e.to_string())?;
-        // let mut canvas = window.into_canvas().build().unwrap();
-        // canvas.set_draw_color(sdl2::pixels::Color::RGB(0,0,0));
-        // canvas.clear();
-        // canvas.present();
-        //
-        // // for r in rx.iter() {
-        // //     canvas.set_draw_color(r.c.to_sdl_color());
-        // //     canvas.draw_point(Point::new(r.x as i32,r.y as i32));
-        // // }
-        //
-        // canvas.present();
 
         let mut event_pump = sdl_context.event_pump()?;
-        window.surface(&event_pump).unwrap().fill_rect(Rect::new(0,0, 10, 10), Color::RGB(255,0,0).to_sdl_color()).unwrap();
+
+        let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+        let texture_creator = canvas.texture_creator();
+
+        //window.surface(&event_pump).unwrap().fill_rect(Rect::new(0,0, 10, 10), Color::RGB(255,0,0).to_sdl_color()).unwrap();
+
+        let mut texture = texture_creator.create_texture_streaming(PixelFormatEnum::RGB24, width, 1)
+            .map_err(|e| e.to_string())?;
         'running: loop {
             for event in event_pump.poll_iter() {
                 match event {
@@ -127,26 +123,37 @@ impl SDLOutput {
                     | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                         break 'running
                     },
+                    Event::KeyDown { keycode: Some(Keycode::S), repeat: false, ..} => {
+                        canvas.present();
+                    },
                     _ => {}
                 }
             }
-            let mut surface = window.surface(&event_pump)?;
+            //let mut surface = window.surface(&event_pump)?;
             let mut r = rx.try_recv().unwrap_or(SetPixelResultRow {
                 y: 0,
                 c: vec![Color::RGB(0,0,0)],
                 is_real_value: false,
             });
             while r.is_real_value {
-                for i in 0..width {
-                    surface.fill_rect(Rect::new(i as i32, r.y as i32, 1, 1), r.c[i as usize].to_sdl_color()).unwrap();
-                }
+                texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
+                    for x in 0..width {
+                        let offset = x as usize * 3;
+                        buffer[offset] = (r.c[x as usize].r * 255.0) as u8;
+                        buffer[offset + 1] = (r.c[x as usize].g * 255.0) as u8;
+                        buffer[offset + 2] = (r.c[x as usize].b * 255.0) as u8;
+                    }
+                })?;
+                canvas.copy(&texture, None, Some(Rect::new(0, r.y as i32, width, 1)))?;
+                canvas.present();
+                //println!("{}", r.y);
                 r = rx.try_recv().unwrap_or(SetPixelResultRow {
                     y: 0,
                     c: vec![Color::RGB(0,0,0)],
                     is_real_value: false,
                 });
             }
-            surface.finish();
+            //surface.finish();
         }
         Ok(())
     }

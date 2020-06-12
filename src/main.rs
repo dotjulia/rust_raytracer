@@ -66,7 +66,7 @@ fn random_scene(scene: &mut Vec<Box<dyn Hitable>>) {
 }
 
 fn main() {
-    let width = 650;
+    let width = 640;
     let height = 480;
     let mut img: Box<dyn Output> = Box::from(sdl_preview::sdl_output::SDLOutput::new(width, height));
     //let mut img: Box<dyn Output> = Box::from(ImageOutput::new(width, height));
@@ -93,7 +93,7 @@ fn main() {
     let lookat = Vector3::new(0.0, 0.5, 0.0);
     let dist_to_focus = (lookfrom-lookat).magnitude();
     let aperture = 0.01;
-    let samples = 200;
+    let samples = 800;
     RenderEngineMultithread::render(
         Box::from(
             Scene {
@@ -116,7 +116,7 @@ fn main() {
             }),
         &mut img,
         50,
-        32,
+        15,
         true,
     );
     let render_duration: u128 = start.elapsed().as_millis();
