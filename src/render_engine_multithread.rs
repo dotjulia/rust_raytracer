@@ -106,7 +106,7 @@ impl RenderEngineMultithread {
         }
     }
 
-    fn color_at(ray: Ray, world: &Box<dyn Hitable>, depth: i32, max_depth: i32) -> Color {
+    fn color_at(ray: Ray, world: &Arc<dyn Hitable>, depth: i32, max_depth: i32) -> Color {
         let mut rec = HitRecord::new_empty();
         if world.hit(&ray, 0.001, 100000000.0, & mut rec) {
             let mut scattered = Ray::new_empty();

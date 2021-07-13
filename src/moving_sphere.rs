@@ -2,6 +2,8 @@ use cgmath::{Vector3, InnerSpace};
 use crate::hitable::{Hitable, HitRecord};
 use crate::ray::Ray;
 use crate::material::Material;
+use crate::AABB::AABB;
+use dyn_clone::private::sync::Arc;
 
 pub struct MovingSphere {
     center1: Vector3<f64>,
@@ -55,8 +57,23 @@ impl Hitable for MovingSphere  {
         return false;
     }
 
-    fn duplicate(&self) -> Box<dyn Hitable> {
-        return Box::from(MovingSphere{
+    fn bounding_box(&self, time0: f64, time1: f64, output_box: &mut AABB) -> bool {
+        let box0 = AABB::new(
+            self.center(time0) - Vector3::<f64>::new(self.radius, self.radius, self.radius),
+            self.center(time0) + Vector3::<f64>::new(self.radius, self.radius, self.radius),
+        );
+        let box1 = AABB::new(
+            self.center(time1) - Vector3::<f64>::new(self.radius, self.radius, self.radius),
+            self.center(time1) + Vector3::<f64>::new(self.radius, self.radius, self.radius),
+        );
+        let ob = AABB::surrounding_box(&box0, &box1);
+        output_box.minimum = ob.minimum;
+        output_box.maximum = ob.maximum;
+        true
+    }
+
+    fn duplicate(&self) -> Arc<dyn Hitable> {
+        return Arc::from(MovingSphere{
             center0: self.center0,
             center1: self.center1,
             time0: self.time0,

@@ -3,10 +3,13 @@ use crate::ray::Ray;
 use crate::hitable::HitRecord;
 use crate::material::Material;
 use crate::render_engine_multithread::RenderEngineMultithread;
+use crate::texture::Texture;
+use crate::solid_color_texture::SolidColorTexture;
+use dyn_clone::private::sync::Arc;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Lambertian {
-    albedo: Vector3<f64>,
+    albedo: Arc<dyn Texture>,
     emission: f64,
 }
 
@@ -18,7 +21,7 @@ impl Material for Lambertian {
             direction: target - rec.position,
         };*/
         *scattered = Ray::newTime(rec.position, target - rec.position, r_in.time);
-        *attenuation = self.albedo;
+        *attenuation = self.albedo.value(rec.u, rec.v, rec.position);
         //*emissive = false;
         /*if self.emission > 0.1 {
             *emissive = true;
@@ -33,17 +36,23 @@ impl Material for Lambertian {
 
     fn duplicate(&self) -> Box<dyn Material> {
         return Box::from(Lambertian {
-            albedo: self.albedo,
+            albedo: self.albedo.clone(),
             emission: self.emission,
         });
     }
 }
 
 impl Lambertian {
-    pub fn new (albedo: Vector3<f64>, emission: f64) -> Lambertian {
+    pub fn new_color (albedo: Vector3<f64>, emission: f64) -> Lambertian {
+        return Lambertian {
+            albedo: Arc::from(SolidColorTexture{ color: albedo }),
+            emission,
+        }
+    }
+    pub fn new_texture(albedo: Arc<dyn Texture>, emission: f64) -> Lambertian {
         return Lambertian {
             albedo,
             emission,
-        }
+        };
     }
 }
