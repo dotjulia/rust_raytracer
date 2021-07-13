@@ -30,7 +30,7 @@ impl HitRecord {
             t: 0.0,
             position: Vector3::new(0.0,0.0,0.0),
             normal: Vector3::new(0.0,0.0,0.0),
-            material: Box::from(Lambertian::new(Vector3::new(1.0, 1.0, 1.0), 0.0)),
+            material: Box::from(Lambertian::new_color(Vector3::new(1.0, 1.0, 1.0), 0.0)),
             u: 0.0,
             v: 0.0,
         };

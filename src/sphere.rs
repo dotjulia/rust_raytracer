@@ -17,7 +17,7 @@ impl Sphere {
     pub fn get_sphere_uv(p: Vector3<f64>) -> UVCoords {
         let theta = (-p.y).acos();
         let phi = (-p.z).atan2(p.x) + PI;
-        return UVCoords::new(phi / (2 * PI), theta / PI);
+        return UVCoords::new(phi / (2.0 * PI), theta / PI);
     }
     pub fn new(center: Vector3<f64>, radius: f64, material: Box<dyn Material>) -> Sphere {
         return Sphere {
@@ -45,7 +45,7 @@ impl Hitable for Sphere  {
 
                 let uv = Sphere::get_sphere_uv(rec.normal);
                 rec.u = uv.x;
-                rec.v = uv.v;
+                rec.v = uv.y;
                 return true;
             }
             temp = (-b + (b * b - a * c).sqrt())/a;
@@ -56,7 +56,7 @@ impl Hitable for Sphere  {
 
                 let uv = Sphere::get_sphere_uv(rec.normal);
                 rec.u = uv.x;
-                rec.v = uv.v;
+                rec.v = uv.y;
                 return true;
             }
         }
